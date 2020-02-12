@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package api;
+
+service Solver {
+    rpc Solve (SolveRequest) returns (SolveResponse) {
+    };
+
+}
+
+message SolveRequest {
+    int32 a = 1;
+    int32 b = 2;
+    int32 c = 3;
+}
+
+message SolveResponse {
+    string answer = 1;
+}
