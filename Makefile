@@ -1,6 +1,6 @@
 .PHONY:run
 run:
-	docker run -p 8080:8081 -it billybones256/grpcequation
+	docker run -p 8081:8081 -it billybones256/grpcequation
 
 .PHONY:grab
 grab:
