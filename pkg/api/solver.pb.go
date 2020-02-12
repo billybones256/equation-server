@@ -4,13 +4,15 @@
 package api
 
 import (
-	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 	math "math"
+)
+
+import (
+	client "github.com/micro/go-micro/client"
+	server "github.com/micro/go-micro/server"
+	context "golang.org/x/net/context"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -165,80 +167,57 @@ var fileDescriptor_7779dcc6dfedf133 = []byte{
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConnInterface
+var _ client.Option
+var _ server.Option
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+// Client API for Solver service
 
-// SolverClient is the client API for Solver service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SolverClient interface {
-	Solve(ctx context.Context, in *SolveRequest, opts ...grpc.CallOption) (*SolveResponse, error)
+	Solve(ctx context.Context, in *SolveRequest, opts ...client.CallOption) (*SolveResponse, error)
 }
 
 type solverClient struct {
-	cc grpc.ClientConnInterface
+	c           client.Client
+	serviceName string
 }
 
-func NewSolverClient(cc grpc.ClientConnInterface) SolverClient {
-	return &solverClient{cc}
+func NewSolverClient(serviceName string, c client.Client) SolverClient {
+	if c == nil {
+		c = client.NewClient()
+	}
+	if len(serviceName) == 0 {
+		serviceName = "api"
+	}
+	return &solverClient{
+		c:           c,
+		serviceName: serviceName,
+	}
 }
 
-func (c *solverClient) Solve(ctx context.Context, in *SolveRequest, opts ...grpc.CallOption) (*SolveResponse, error) {
+func (c *solverClient) Solve(ctx context.Context, in *SolveRequest, opts ...client.CallOption) (*SolveResponse, error) {
+	req := c.c.NewRequest(c.serviceName, "Solver.Solve", in)
 	out := new(SolveResponse)
-	err := c.cc.Invoke(ctx, "/api.Solver/Solve", in, out, opts...)
+	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// SolverServer is the server API for Solver service.
-type SolverServer interface {
-	Solve(context.Context, *SolveRequest) (*SolveResponse, error)
+// Server API for Solver service
+
+type SolverHandler interface {
+	Solve(context.Context, *SolveRequest, *SolveResponse) error
 }
 
-// UnimplementedSolverServer can be embedded to have forward compatible implementations.
-type UnimplementedSolverServer struct {
+func RegisterSolverHandler(s server.Server, hdlr SolverHandler, opts ...server.HandlerOption) {
+	s.Handle(s.NewHandler(&Solver{hdlr}, opts...))
 }
 
-func (*UnimplementedSolverServer) Solve(ctx context.Context, req *SolveRequest) (*SolveResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Solve not implemented")
+type Solver struct {
+	SolverHandler
 }
 
-func RegisterSolverServer(s *grpc.Server, srv SolverServer) {
-	s.RegisterService(&_Solver_serviceDesc, srv)
-}
-
-func _Solver_Solve_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SolveRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SolverServer).Solve(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.Solver/Solve",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SolverServer).Solve(ctx, req.(*SolveRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _Solver_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "api.Solver",
-	HandlerType: (*SolverServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Solve",
-			Handler:    _Solver_Solve_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "solver.proto",
+func (h *Solver) Solve(ctx context.Context, in *SolveRequest, out *SolveResponse) error {
+	return h.SolverHandler.Solve(ctx, in, out)
 }

@@ -2,14 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"google.golang.org/grpc"
 	"io/ioutil"
 	"log"
 	"os"
 
 	"context"
 
-	pb "grpcequation/pkg/api"
+	"github.com/micro/go-micro"
+
+	"equation-client/pkg/api"
 )
 
 const (
@@ -17,8 +18,8 @@ const (
 	defaultFilename = "test1.json"
 )
 
-func parseFile(file string) (*pb.SolveRequest, error) {
-	var req *pb.SolveRequest
+func parseFile(file string) (*api.SolveRequest, error) {
+	var req *api.SolveRequest
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -29,32 +30,30 @@ func parseFile(file string) (*pb.SolveRequest, error) {
 
 func main() {
 
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("Did not connect: %v", err)
-	}
-	defer conn.Close()
-	client := pb.NewSolverClient(conn)
+	service := micro.NewService(micro.Name("solver"))
+	service.Init()
+
+	client := api.NewSolverClient("solver", service.Client())
 
 	file := defaultFilename
 	if len(os.Args) > 1 {
 		file = os.Args[1]
 	}
 
-	consignment, err := parseFile(file)
+	req, err := parseFile(file)
 
 	if err != nil {
 		log.Fatalf("Could not parse file: %v", err)
 	}
 
-	r, err := client.Solve(context.Background(), consignment)
+	r, err := client.Solve(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Could not greet: %v", err)
 	}
 	prettyPrint(r)
 }
 
-func prettyPrint(c *pb.SolveResponse) {
+func prettyPrint(c *api.SolveResponse) {
 	log.Println("======================================")
 	log.Printf("a: %d\n", c.GetA())
 	log.Printf("b: %d\n", c.GetB())
