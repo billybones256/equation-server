@@ -2,7 +2,8 @@ package solver
 
 import (
 	"context"
-	"grpcequtation/pkg/api"
+	"grpcequation/pkg/api"
+	"log"
 )
 
 //GRPCServer ...
@@ -10,8 +11,9 @@ type GRPCServer struct{}
 
 //Square ...
 func (server *GRPCServer) Solve(ctx context.Context, req *api.SolveRequest) (*api.SolveResponse, error) {
+	log.Printf("%v", *req)
 	result := solve(int(req.GetA()), int(req.GetB()), int(req.GetC()))
-	return &api.SolveResponse{Answer: result}, nil
+	return &api.SolveResponse{A: req.GetA(), B: req.GetB(), C: req.GetB(), Answer: result}, nil
 }
 
 func linear(b, c int) string {

@@ -1,12 +1,24 @@
-FROM golang
+FROM golang:alpine as builder
 
-WORKDIR /go/src/github.com/harry/grpcequation
-COPY cmd/server cmd/server
-COPY pkg pkg
-WORKDIR /go/src/github.com/harry/grpcequation/cmd/server
+RUN apk update && apk upgrade && apk add --no-cache git
 
-RUN go get -d -v ./
-RUN go build
+RUN mkdir /grpcequation
+WORKDIR /grpcequation
 
-CMD  ./server
-EXPOSE 8081
+ENV G0111MODULE=on
+
+COPY . .
+
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server cmd/server/main.go
+
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+RUN mkdir /app
+WORKDIR /app
+COPY --from=builder /grpcequation/server .
+
+CMD ["./server"]
