@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"equation-server/pkg/api"
+	vesselProto "equation-server/pkg/vessel"
 	"fmt"
 	"github.com/micro/go-micro"
+	"log"
 )
 
 type Solver interface {
@@ -12,11 +14,20 @@ type Solver interface {
 }
 
 type service struct {
-	solver Solver
+	solver       Solver
+	vesselClient vesselProto.VesselServiceClient
 }
 
 //Solve ...
 func (s *service) Solve(ctx context.Context, req *api.SolveRequest, res *api.SolveResponse) error {
+	vesselResponse, err := s.vesselClient.IsPrime(context.Background(), &vesselProto.Specification{
+		Sum: req.A + req.B + req.C,
+	})
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	log.Printf("A(%d) + B(%d) + C(%d): %t \n", req.A, req.B, req.C, vesselResponse.IsPrime)
 	result := solve(int(req.GetA()), int(req.GetB()), int(req.GetC()))
 	res.A = req.GetA()
 	res.B = req.GetB()
@@ -58,7 +69,8 @@ func main() {
 
 	srv := micro.NewService(micro.Name("solver"))
 	srv.Init()
-	api.RegisterSolverHandler(srv.Server(), &service{})
+	vesselClient := vesselProto.NewVesselServiceClient("vessel", srv.Client())
+	api.RegisterSolverHandler(srv.Server(), &service{vesselClient: vesselClient})
 
 	if err := srv.Run(); err != nil {
 		fmt.Println(err)

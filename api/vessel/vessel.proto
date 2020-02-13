@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package vessel;
+
+service VesselService {
+    rpc IsPrime (Specification) returns (Response) {
+    }
+}
+
+message Specification {
+    int32 sum = 1;
+}
+
+message Response {
+    bool is_prime = 1;
+}

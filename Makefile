@@ -9,6 +9,7 @@ endif
 .PHONY:proto
 proto:
 	protoc -I api/proto --go_out=plugins=micro:pkg/api api/proto/*.proto
+	protoc -I api/vessel --go_out=plugins=micro:pkg/vessel api/vessel/*.proto
 
 .PHONY:build
 build:
